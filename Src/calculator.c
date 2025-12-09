@@ -15,7 +15,7 @@
 #define KEYB_ZERO_CODE 11
 #define KEYB_HASH_CODE 12
 
-#define INPUT_BUFFER_SIZE 16
+#define INPUT_BUFFER_SIZE 9
 #define OUTPUT_BUFFER_SIZE 18
 
 
@@ -24,7 +24,7 @@ static int32_t first_number = 0;
 static int32_t second_number = 0;
 static int32_t result = 0;
 static CalculatorOperation operation = CALC_OPERATION_ADDITION;
-static char input_buffer[INPUT_BUFFER_SIZE] = "";
+static char input_buffer[INPUT_BUFFER_SIZE+1] = "";
 static uint8_t input_index = 0;
 
 CalculatorState calculator_get_state(void)
@@ -32,9 +32,10 @@ CalculatorState calculator_get_state(void)
     return state;
 }
 
+void calculator_update_display(void);
 void calculator_init(void)
 {
-	// TODO print instructions about clear,enter keys and buffer size
+	calculator_update_display();
     calculator_reset();
 }
 
@@ -69,7 +70,7 @@ void calculator_write_info_message(void)
 	            break;
 	        case CALC_STATE_SHOW_RESULT:
 	        case CALC_STATE_ERROR:
-	        	oled_WriteString("Press # to clear", Font_7x10, White);
+	        	oled_WriteString("Press SB1 to clear", Font_7x10, White);
 	            break;
 	        default:
 	        	oled_WriteString("unknown state", Font_7x10, White);
@@ -95,7 +96,7 @@ void calculator_update_display(void)
     // first operand and operation
     oled_SetCursor(0, OLED_LINE_0_Y);
     if (state == CALC_STATE_INPUT_OPERATION || state == CALC_STATE_INPUT_SECOND_OPERAND || state == CALC_STATE_SHOW_RESULT) {
-        snprintf(line1, sizeof(line1), "%ld%c", first_number, CalculatorOperationSymbols[state]);
+        snprintf(line1, sizeof(line1), "%ld%c", first_number, CalculatorOperationSymbols[operation]);
     } else {
         if (input_index == 0) {
             snprintf(line1, sizeof(line1), "_");
@@ -199,9 +200,8 @@ static void calculator_compute_result(void)
 
 void calculator_process_key(uint8_t key)
 {
-    if (input_index >= sizeof(input_buffer) - 1) {
-        state = CALC_STATE_ERROR;
-        return;
+    if ((input_index >= sizeof(input_buffer) - 1) && (key != KEYB_HASH_CODE && key != KEYB_ASTERISK_CODE) ) {
+//        state = CALC_STATE_ERROR;
     }
 
     // 1. enter first number digit by digit
