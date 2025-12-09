@@ -32,10 +32,21 @@ CalculatorState calculator_get_state(void)
     return state;
 }
 
-void calculator_update_display(void);
+void calculator_draw_welcome_page(void) {
+	oled_SetCursor(0, OLED_LINE_0_Y);
+	oled_WriteString("digits=enter num", Font_7x10, White);
+	oled_SetCursor(0, OLED_LINE_1_Y);
+	oled_WriteString("SB1=clear", Font_7x10, White);
+	oled_SetCursor(0, OLED_LINE_2_Y);
+	oled_WriteString("SB9=operation,res", Font_7x10, White);
+	oled_SetCursor(0, OLED_LINE_3_Y);
+	oled_WriteString("press any key", Font_7x10, White);
+	oled_UpdateScreen();
+}
+
 void calculator_init(void)
 {
-	calculator_update_display();
+	calculator_draw_welcome_page();
     calculator_reset();
 }
 
@@ -200,33 +211,17 @@ static void calculator_compute_result(void)
 
 void calculator_process_key(uint8_t key)
 {
-    if ((input_index >= sizeof(input_buffer) - 1) && (key != KEYB_HASH_CODE && key != KEYB_ASTERISK_CODE) ) {
-//        state = CALC_STATE_ERROR;
-    }
-
-    // 1. enter first number digit by digit
-    // 2. press #
-    // 3. clicking # select operation
-    // 4. enter second number just by pressing first digit
-    // 5. press # to calculate result
-    // -. pressing * in any state clears the state
     switch(key) {
         case 1: case 2: case 3: case 4: case 5:
         case 6: case 7: case 8: case 9:
-            if (input_index < sizeof(input_buffer) - 1) {
+            if ((input_index < sizeof(input_buffer) - 1) && (state == CALC_STATE_INPUT_FIRST_OPERAND || state == CALC_STATE_INPUT_OPERATION || state == CALC_STATE_INPUT_SECOND_OPERAND)) {
                 input_buffer[input_index++] = '0' + key;
-//                input_buffer[input_index] = '\0';
-
-//                if (state == CALC_STATE_INPUT_FIRST_OPERAND && input_index == 1) {
-//                    oled_Fill(Black);
-//                }
             }
             break;
 
         case KEYB_ZERO_CODE:
-            if (0 < input_index && input_index < sizeof(input_buffer) - 1) {
+            if ((0 < input_index) && (input_index < sizeof(input_buffer) - 1)  && (state == CALC_STATE_INPUT_FIRST_OPERAND || state == CALC_STATE_INPUT_OPERATION || state == CALC_STATE_INPUT_SECOND_OPERAND)) {
                 input_buffer[input_index++] = '0';
-//                input_buffer[input_index] = '\0';
             }
             break;
 
@@ -241,7 +236,6 @@ void calculator_process_key(uint8_t key)
 				calculator_clear_input_buffer();
 
 				state = CALC_STATE_INPUT_OPERATION;
-//				oled_Fill(Black);
 			}
             else if (state == CALC_STATE_INPUT_FIRST_OPERAND && input_index == 0) {
 				first_number = 0;
@@ -249,7 +243,6 @@ void calculator_process_key(uint8_t key)
 				calculator_clear_input_buffer();
 
 				state = CALC_STATE_INPUT_OPERATION;
-//				oled_Fill(Black);
 			}
 			else if (state == CALC_STATE_INPUT_OPERATION) {
 				operation = (operation + 1) % CALC_OPERATIONS_COUNT;
@@ -259,6 +252,19 @@ void calculator_process_key(uint8_t key)
 
                 calculator_compute_result();
             }
+			else if (state == CALC_STATE_SHOW_RESULT) {
+			    int res = result;
+			    char backup[INPUT_BUFFER_SIZE+1];
+			    memset(backup, '\0', sizeof(backup));
+
+			    snprintf(backup, sizeof backup, "%d", res);
+
+			    calculator_reset();
+			    first_number = res;
+
+			    memcpy(input_buffer, backup, sizeof backup);
+			    input_index = strlen(input_buffer);
+			}
             break;
     }
 
