@@ -235,8 +235,16 @@ void calculator_process_key(uint8_t key)
             break;
 
         case KEYB_HASH_CODE:
-        	if (state == CALC_STATE_INPUT_FIRST_OPERAND && input_index > 0) {
+            if (state == CALC_STATE_INPUT_FIRST_OPERAND && input_index > 0) {
 				first_number = atoi(input_buffer);
+				input_index = 0;
+				calculator_clear_input_buffer();
+
+				state = CALC_STATE_INPUT_OPERATION;
+//				oled_Fill(Black);
+			}
+            else if (state == CALC_STATE_INPUT_FIRST_OPERAND && input_index == 0) {
+				first_number = 0;
 				input_index = 0;
 				calculator_clear_input_buffer();
 
